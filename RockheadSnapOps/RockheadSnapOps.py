@@ -9,10 +9,10 @@ bl_info = {
     "name": "Rockhead Games snap menu extension",
     "author": "Fernando D'Andrea",
     "version": (1, 0),
-    "blender": (2, 80, 0),
+    "blender": (3, 0, 0),
     "location": "View3D > Edit Mode, Mesh > Snap",
-    "description": "Add operations to relocate objects and subobjects.",
-    "category": "Object",
+    "description": "Add operations to relocate objects and sub-objects.",
+    "category": "3D View"
 }
 
 
@@ -176,9 +176,9 @@ class LookAtCursorOperator(bpy.types.Operator):
         name="Axis",
         description="Axis that will point to cursor",
         items=[
-            ('X', "X", "Eixo X"),
-            ('Y', "Y", "Eixo Y"),
-            ('Z', "Z", "Eixo Z"),
+            ('X', "X", "X Axis"),
+            ('Y', "Y", "Y Axis"),
+            ('Z', "Z", "Z Axis"),
         ],
         default='Z',
     )
@@ -210,12 +210,16 @@ class LookAtCursorOperator(bpy.types.Operator):
                 direction = obj.location - cursor_location
             direction.normalize()
 
-            if self.axis == 'X':
-                obj_rot = direction.to_track_quat('X', 'Z')
-            elif self.axis == 'Y':
-                obj_rot = direction.to_track_quat('Y', 'Z')
-            else:
-                obj_rot = direction.to_track_quat('Z', 'Y')
+            try:
+                if self.axis == 'X':
+                    obj_rot = direction.to_track_quat('X', 'Z')
+                elif self.axis == 'Y':
+                    obj_rot = direction.to_track_quat('Y', 'Z')
+                else:
+                    obj_rot = direction.to_track_quat('Z', 'Y')
+            except ValueError:
+                self.report({'ERROR'}, "Could not point object to cursor. Are the object and cursor in the same location?")
+                return {'CANCELLED'}
 
             obj.rotation_euler = obj_rot.to_euler()
 
