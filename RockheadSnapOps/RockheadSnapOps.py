@@ -160,6 +160,10 @@ class MoveToCircumcenterOperator(bpy.types.Operator):
             self.report({'ERROR'}, "Could not calculate circumcenter. Are the points colinear?")
             return {'CANCELLED'}
 
+        # Display the distance between the circumcenter and the input points:
+        for i in range(len(p)):
+            self.report({'INFO'}, "Distance from circumcenter to point {}: {}".format(i, (circumcenter - p[i]).length))
+
         context.scene.cursor.location = circumcenter
 
         return {'FINISHED'}
