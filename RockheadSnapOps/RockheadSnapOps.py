@@ -16,7 +16,7 @@ bl_info = {
 }
 
 
-def calculate_circumcenter_3d(p1, p2, p3):
+def calculate_circumcenter_3d(p1, p2, p3, context=None):
 
     def barycentric_to_world(p1, p2, p3, u, v, w):
 
@@ -31,7 +31,8 @@ def calculate_circumcenter_3d(p1, p2, p3):
     w = c.length_squared * b.dot(a)
 
     if (u + v + w) == 0:
-        report({'WARNING'}, "The 3 points are colinear. Using average instead!")
+        if context is not None:
+            context.report({'WARNING'}, "The 3 points are colinear. Using average instead!")
         return (p1 + p2 + p3) / 3
 
     try:
@@ -147,12 +148,12 @@ class MoveToCircumcenterOperator(bpy.types.Operator):
                 p = [obj.matrix_world @ bone.head_local for bone in context.selected_bones]
 
         if len(p) == 3:
-            circumcenter = calculate_circumcenter_3d(p[0], p[1], p[2])
+            circumcenter = calculate_circumcenter_3d(p[0], p[1], p[2], self)
 
         if len(p) == 4:
             circumcenter = calculate_circumcenter_4d(p[0], p[1], p[2], p[3])
             if circumcenter is None:
-                circumcenter = calculate_circumcenter_3d(p[0], p[1], p[2])
+                circumcenter = calculate_circumcenter_3d(p[0], p[1], p[2], self)
                 if circumcenter is not None:
                     self.report({'WARNING'}, "The 4 points are coplanar. Using 3D circumcenter instead!")
 
@@ -160,9 +161,20 @@ class MoveToCircumcenterOperator(bpy.types.Operator):
             self.report({'ERROR'}, "Could not calculate circumcenter. Are the points colinear?")
             return {'CANCELLED'}
 
-        # Display the distance between the circumcenter and the input points:
+        # Display the distance between the circumcenter and the input points:\
+        message = ""
+        d = None
+        warn = False
         for i in range(len(p)):
-            self.report({'INFO'}, "Distance from circumcenter to point {}: {}".format(i, (circumcenter - p[i]).length))
+            message += "Distance to point {}: {}\n".format(i, (p[i] - circumcenter).length)
+            if d is None:
+                d = (p[i] - circumcenter).length
+                continue
+            if d != (p[i] - circumcenter).length:
+                warn = True
+        if warn:
+            message = "The points are not equidistant from the circumcenter.\n" + message
+        self.report({'WARNING'} if warn else {'INFO'}, message)
 
         context.scene.cursor.location = circumcenter
 
